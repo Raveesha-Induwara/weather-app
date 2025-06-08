@@ -1,3 +1,7 @@
+export function convertKelvinToCelsius(tempInKelvin: number) {
+  return Math.round(tempInKelvin - 273.15);
+}
+
 export function convertWindSpeed(speedInMeterPerSecond: number): string {
   const speedInKilometerPerHour = speedInMeterPerSecond * 3.6;
   return `${speedInKilometerPerHour.toFixed(0)}km/h`;

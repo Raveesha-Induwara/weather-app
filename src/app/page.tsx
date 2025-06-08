@@ -8,7 +8,12 @@ import { WeatherForecastResponse } from "./types";
 import WeatherIcon from "@/components/WeatherIcon";
 import { FaArrowDownLong, FaArrowUpLong } from "react-icons/fa6";
 import WeatherDetails from "@/components/WeatherDetails";
-import { convertMetersToKilometer, convertWindSpeed } from "@/utils/common";
+import {
+  convertKelvinToCelsius,
+  convertMetersToKilometer,
+  convertWindSpeed,
+} from "@/utils/common";
+import ForecastWeatherDetails from "@/components/ForecastWeatherDetails";
 
 export default function Home() {
   const { isPending, isLoading, data } = useQuery<WeatherForecastResponse>({
@@ -17,10 +22,27 @@ export default function Home() {
       const { data } = await axios.get(
         `https://api.openweathermap.org/data/2.5/forecast?q=${"Colombo"}&appid=${
           process.env.NEXT_PUBLIC_WEATHER_API_KEY
-        }&cnt=7`
+        }&cnt=60`
       );
       return data;
     },
+  });
+
+  const uniqueDates = [
+    ...new Set(
+      data?.list.map(
+        (entry) => new Date(entry.dt * 1000).toISOString().split("T")[0]
+      )
+    ),
+  ];
+
+  // Filtering data to get the first entry after 6AM for each unique date
+  const firstDataForEachDate = uniqueDates.map((date) => {
+    return data?.list.find((entry) => {
+      const entryDate = new Date(entry.dt * 1000).toISOString().split("T")[0];
+      const entryTime = new Date(entry.dt * 1000).getUTCHours();
+      return date === entryDate && entryTime >= 6;
+    });
   });
 
   function getLocaleDate(dateString: string) {
@@ -35,10 +57,6 @@ export default function Home() {
       day: "numeric",
     });
     return localDateString;
-  }
-
-  function convertKelvinToCelsius(tempInKelvin: number) {
-    return Math.round(tempInKelvin - 273.15);
   }
 
   if (isLoading || isPending) {
@@ -132,6 +150,26 @@ export default function Home() {
           <h2 className="flex gap-1 text-2xl items-end">
             <p>Forecast (7 days)</p>
           </h2>
+
+          {firstDataForEachDate.map((d, index) => (
+            <ForecastWeatherDetails
+              key={index}
+              date={format(parseISO(d?.dt_txt ?? ""), "MM/dd")}
+              day={format(parseISO(d?.dt_txt ?? ""), "EEEE")}
+              temp={d?.main.temp ?? 0}
+              temp_min={d?.main.temp_min ?? 0}
+              temp_max={d?.main.temp_max ?? 0}
+              feels_like={d?.main.feels_like ?? 0}
+              weatherIcon={d?.weather[0].icon ?? ""}
+              description={d?.weather[0].description ?? ""}
+              visibility={convertMetersToKilometer(d?.visibility ?? 0)}
+              humidity={`${d?.main.humidity ?? 0}%`}
+              windSpeed={convertWindSpeed(d?.wind.speed ?? 0)}
+              airPressure={`${d?.main.pressure ?? 0}hPa`}
+              sunrise={format(fromUnixTime(data?.city.sunrise ?? 0), "H:mm")}
+              sunset={format(fromUnixTime(data?.city.sunset ?? 0), "H:mm")}
+            />
+          ))}
         </section>
       </main>
     </div>

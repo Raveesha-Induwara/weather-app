@@ -10,7 +10,7 @@ interface SingleWeatherDetailProps {
   value: string;
 }
 
-interface WeatherDetailsProps {
+export interface WeatherDetailsProps {
   visibility: string;
   humidity: string;
   windSpeed: string;
